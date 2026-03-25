@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HojokinNavi - AI補助金マッチングポータル β版</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --blue:#185FA5;--blue-light:#E6F1FB;--blue-text:#0C447C;
+  --green:#3B6D11;--green-light:#EAF3DE;--green-text:#27500A;
+  --amber:#854F0B;--amber-light:#FAEEDA;--amber-text:#633806;
+  --bg:#f5f5f3;--bg2:#ffffff;--bg3:#f1efe8;
+  --border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.2);
+  --text:#1a1a18;--text2:#6b6a64;--text3:#9c9a92;
+  --radius-md:8px;--radius-lg:12px;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#1a1a18;--bg2:#242422;--bg3:#2c2c2a;
+    --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+    --text:#e8e6dc;--text2:#9c9a92;--text3:#6b6a64;
+    --blue-light:#0c2a45;--blue-text:#85B7EB;
+    --green-light:#0d2010;--green-text:#97C459;
+    --amber-light:#2a1a05;--amber-text:#FAC775;
+  }
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg);min-height:100vh;}
+
+.portal{display:grid;grid-template-rows:52px 1fr;min-height:100vh;}
+.header{background:var(--bg2);border-bottom:0.5px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;position:sticky;top:0;z-index:10;}
+.logo-icon{width:28px;height:28px;border-radius:6px;background:var(--blue);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.logo-text{font-size:15px;font-weight:600;color:var(--text);}
+.logo-text span{color:var(--blue);}
+.header-badge{margin-left:auto;background:var(--blue-light);color:var(--blue-text);font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500;}
+
+.body{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 52px);}
+
+.chat-pane{background:var(--bg2);border-right:0.5px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.chat-header{padding:14px 16px 10px;border-bottom:0.5px solid var(--border);flex-shrink:0;}
+.chat-header-title{font-size:13px;font-weight:600;color:var(--text);}
+.chat-header-sub{font-size:11px;color:var(--text2);margin-top:2px;}
+.chat-step-bar{display:flex;gap:4px;margin-top:10px;}
+.step-dot{height:4px;border-radius:2px;flex:1;background:var(--border);}
+.step-dot.done{background:var(--blue);}
+.step-dot.active{background:#378ADD;}
+
+.chat-msgs{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
+.msg{display:flex;gap:8px;align-items:flex-start;}
+.msg.user{flex-direction:row-reverse;}
+.avatar{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;}
+.avatar.navi{background:var(--blue-light);color:var(--blue-text);}
+.avatar.user{background:var(--bg3);color:var(--text2);}
+.bubble{max-width:82%;padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.6;border:0.5px solid var(--border);background:var(--bg3);}
+.msg.user .bubble{background:var(--blue-light);border-color:transparent;color:var(--blue-text);}
+.choices{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;padding-left:36px;}
+.choice-btn{padding:5px 12px;border-radius:20px;border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:12px;cursor:pointer;transition:all .15s;}
+.choice-btn:hover{background:var(--blue-light);color:var(--blue-text);border-color:var(--blue);}
+
+.chat-input-area{padding:10px 14px;border-top:0.5px solid var(--border);display:flex;gap:8px;align-items:center;flex-shrink:0;background:var(--bg2);}
+.chat-input{flex:1;border:0.5px solid var(--border2);border-radius:8px;padding:8px 12px;font-size:13px;background:var(--bg2);color:var(--text);outline:none;font-family:inherit;}
+.chat-input:focus{border-color:var(--blue);}
+.chat-input:disabled{opacity:.5;cursor:not-allowed;}
+.send-btn{padding:8px 16px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:500;white-space:nowrap;font-family:inherit;}
+.send-btn:hover{background:var(--blue-text);}
+.send-btn:disabled{opacity:.4;cursor:default;}
+
+.result-pane{background:var(--bg3);display:flex;flex-direction:column;overflow:hidden;}
+.result-header{padding:14px 16px 10px;background:var(--bg2);border-bottom:0.5px solid var(--border);flex-shrink:0;}
+.result-header-title{font-size:13px;font-weight:600;color:var(--text);}
+.result-header-sub{font-size:11px;color:var(--text2);margin-top:2px;}
+.result-content{flex:1;overflow-y:auto;padding:12px;}
+
+.placeholder-msg{text-align:center;padding:60px 20px;color:var(--text3);font-size:13px;line-height:1.8;}
+.placeholder-icon{width:40px;height:40px;border-radius:50%;background:var(--border);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;}
+
+.summary-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.sum-card{background:var(--bg2);border-radius:var(--radius-md);padding:10px;text-align:center;border:0.5px solid var(--border);}
+.sum-num{font-size:20px;font-weight:600;color:var(--blue);}
+.sum-label{font-size:11px;color:var(--text2);margin-top:2px;}
+
+.grant-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:10px;}
+.gc-top{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;}
+.gc-badge{padding:2px 7px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap;flex-shrink:0;}
+.badge-meti{background:var(--blue-light);color:var(--blue-text);}
+.badge-mhlw{background:var(--green-light);color:var(--green-text);}
+.badge-pref{background:var(--amber-light);color:var(--amber-text);}
+.gc-title{font-size:13px;font-weight:500;flex:1;line-height:1.4;color:var(--text);}
+.gc-score{font-size:18px;font-weight:600;flex-shrink:0;}
+.gc-score.high{color:#3B6D11;}
+.gc-score.mid{color:#BA7517;}
+
+.meter-bg{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-bottom:10px;}
+.meter-fill{height:100%;border-radius:3px;transition:width .6s ease;}
+.fill-high{background:#639922;}
+.fill-mid{background:#EF9F27;}
+
+.gc-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.meta-chip{font-size:11px;color:var(--text2);background:var(--bg3);padding:2px 7px;border-radius:4px;border:0.5px solid var(--border);}
+
+.req-label,.sched-label{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+.req-row{display:flex;align-items:center;gap:7px;font-size:12px;margin-bottom:4px;color:var(--text);}
+.req-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.dot-ok{background:#639922;}
+.dot-warn{background:#EF9F27;}
+.dot-no{background:#E24B4A;}
+.req-section{margin-bottom:12px;}
+
+.sched-section{}
+.sched-row{display:flex;gap:10px;align-items:flex-start;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:12px;color:var(--text);}
+.sched-row:last-child{border-bottom:none;}
+.sched-mo{width:72px;color:var(--text2);flex-shrink:0;padding-top:1px;}
+.sched-bar{width:8px;display:flex;flex-direction:column;align-items:center;padding-top:4px;}
+.sched-circle{width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0;}
+.sched-line-v{width:1px;flex:1;background:var(--border);margin-top:3px;min-height:16px;}
+.sched-text{flex:1;line-height:1.5;padding-bottom:4px;}
+
+.loading-dots{display:inline-flex;gap:3px;vertical-align:middle;}
+.loading-dots span{width:5px;height:5px;border-radius:50%;background:var(--text3);animation:blink 1.2s infinite;display:inline-block;}
+.loading-dots span:nth-child(2){animation-delay:.2s;}
+.loading-dots span:nth-child(3){animation-delay:.4s;}
+@keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+
+@media(max-width:640px){
+  .body{grid-template-columns:1fr;grid-template-rows:1fr 1fr;}
+  .chat-pane{border-right:none;border-bottom:0.5px solid var(--border);}
+}
+</style>
+</head>
+<body>
+<div class="portal">
+  <div class="header">
+    <div class="logo-icon">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <rect x="2" y="2" width="5" height="5" rx="1" fill="white" opacity=".9"/>
+        <rect x="9" y="2" width="5" height="5" rx="1" fill="white" opacity=".7"/>
+        <rect x="2" y="9" width="5" height="5" rx="1" fill="white" opacity=".7"/>
+        <rect x="9" y="9" width="5" height="5" rx="1" fill="white" opacity=".5"/>
+      </svg>
+    </div>
+    <div class="logo-text">Hojokin<span>Navi</span></div>
+    <div class="header-badge">β版 デモ</div>
+  </div>
+
+  <div class="body">
+    <div class="chat-pane">
+      <div class="chat-header">
+        <div class="chat-header-title">AI 補助金ナビ</div>
+        <div class="chat-header-sub">企業情報を入力すると、最適な補助金・助成金をご提案します</div>
+        <div class="chat-step-bar">
+          <div class="step-dot active" id="sd0"></div>
+          <div class="step-dot" id="sd1"></div>
+          <div class="step-dot" id="sd2"></div>
+          <div class="step-dot" id="sd3"></div>
+          <div class="step-dot" id="sd4"></div>
+        </div>
+      </div>
+      <div class="chat-msgs" id="chatMsgs"></div>
+      <div class="chat-input-area">
+        <input class="chat-input" id="chatInput" placeholder="メッセージを入力..." disabled/>
+        <button class="send-btn" id="sendBtn" onclick="handleSend()" disabled>送信</button>
+      </div>
+    </div>
+
+    <div class="result-pane">
+      <div class="result-header">
+        <div class="result-header-title">マッチング結果</div>
+        <div class="result-header-sub" id="resultSub">チャットで企業情報を入力すると結果が表示されます</div>
+      </div>
+      <div class="result-content" id="resultContent">
+        <div class="placeholder-msg">
+          <div class="placeholder-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.2" opacity=".5"/>
+              <path d="M10 7v4M10 13h.01" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
+            </svg>
+          </div>
+          左のチャットで企業情報を入力してください<br>適合する補助金・助成金が<br>自動で表示されます
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const FLOW = [
+  {text:'こんにちは！AI補助金ナビです。御社に最適な補助金・助成金をご提案します。\nまず、業種を教えてください。',choices:['製造業','IT・ソフトウェア','飲食・サービス業','建設業','小売業','医療・介護','その他'],key:'industry',step:0},
+  {text:'ありがとうございます。従業員数を教えてください。',choices:['1〜5名','6〜20名','21〜50名','51〜100名','101名以上'],key:'employees',step:1},
+  {text:'設立からの年数はどれくらいですか？',choices:['創業1年未満','1〜3年','3〜5年','5〜10年','10年以上'],key:'age',step:2},
+  {text:'現在、最も力を入れたい取り組みを選んでください。',choices:['設備・機械の導入','DX・ITシステム導入','新商品・新サービス開発','採用・人材育成','販路拡大','事業承継・M&A'],key:'goal',step:3},
+  {text:'直近の売上高（概算）を教えてください。',choices:['1,000万円未満','1,000〜5,000万円','5,000万円〜1億円','1億〜5億円','5億円以上'],key:'revenue',step:4}
+];
+
+let stepIdx=0;
+const answers={};
+const msgs=document.getElementById('chatMsgs');
+const input=document.getElementById('chatInput');
+const sendBtn=document.getElementById('sendBtn');
+
+function addMsg(from,text,choices){
+  const div=document.createElement('div');
+  div.className=`msg ${from}`;
+  const av=document.createElement('div');
+  av.className=`avatar ${from}`;
+  av.textContent=from==='navi'?'AI':'あ';
+  const bub=document.createElement('div');
+  bub.className='bubble';
+  bub.innerHTML=text.replace(/\n/g,'<br>');
+  if(from==='navi')div.appendChild(av);
+  div.appendChild(bub);
+  if(from==='user')div.appendChild(av);
+  msgs.appendChild(div);
+  if(choices&&choices.length){
+    const cDiv=document.createElement('div');
+    cDiv.className='choices';
+    const cid='c_'+stepIdx+'_'+Date.now();
+    cDiv.id=cid;
+    choices.forEach(c=>{
+      const btn=document.createElement('button');
+      btn.className='choice-btn';
+      btn.textContent=c;
+      btn.onclick=()=>choiceSelected(c,cid);
+      cDiv.appendChild(btn);
+    });
+    msgs.appendChild(cDiv);
+  }
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function updateStepBar(s){
+  for(let i=0;i<5;i++){
+    const d=document.getElementById('sd'+i);
+    if(i<s)d.className='step-dot done';
+    else if(i===s)d.className='step-dot active';
+    else d.className='step-dot';
+  }
+}
+
+function choiceSelected(val,cid){
+  const el=document.getElementById(cid);
+  if(el)el.remove();
+  answers[FLOW[stepIdx].key]=val;
+  addMsg('user',val);
+  stepIdx++;
+  updateStepBar(stepIdx);
+  if(stepIdx<FLOW.length){
+    setTimeout(()=>addMsg('navi',FLOW[stepIdx].text,FLOW[stepIdx].choices),400);
+  } else {
+    setTimeout(()=>showAnalyzing(),400);
+  }
+}
+
+function showAnalyzing(){
+  const div=document.createElement('div');
+  div.className='msg navi';
+  div.id='analyzingMsg';
+  div.innerHTML=`<div class="avatar navi">AI</div><div class="bubble">入力情報をもとに補助金データベースを検索しています <span class="loading-dots"><span></span><span></span><span></span></span></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  setTimeout(()=>{
+    const el=document.getElementById('analyzingMsg');
+    if(el)el.remove();
+    addMsg('navi','分析が完了しました！御社に適合する補助金・助成金が <strong>3件</strong> 見つかりました。\n右側の結果パネルをご確認ください。\n\n補助金について、さらにご質問があればお気軽にどうぞ。');
+    input.disabled=false;
+    sendBtn.disabled=false;
+    input.placeholder='例：ものづくり補助金の申請条件は？';
+    showResults();
+  },2200);
+}
+
+function handleSend(){
+  const v=input.value.trim();
+  if(!v)return;
+  addMsg('user',v);
+  input.value='';
+  const div=document.createElement('div');
+  div.className='msg navi';
+  div.id='replyMsg';
+  div.innerHTML=`<div class="avatar navi">AI</div><div class="bubble"><span class="loading-dots"><span></span><span></span><span></span></span></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  setTimeout(()=>{
+    const el=document.getElementById('replyMsg');
+    if(el)el.remove();
+    addMsg('navi',getReply(v));
+  },1200);
+}
+
+input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();handleSend();}});
+
+function getReply(q){
+  const lq=q.toLowerCase();
+  if(lq.includes('ものづく'))return 'ものづくり補助金は、中小企業が新製品・新サービスの開発や生産プロセスの改善に取り組む際の費用を補助します。\n補助率は1/2〜2/3、上限は最大4,000万円（特定枠）です。\n御社の場合、従業員数と業種の条件は満たしていますが、事業計画書の策定が必要です。';
+  if(lq.includes('it')||lq.includes('デジタル')||lq.includes('dx'))return 'デジタル化・AI導入補助金（旧IT導入補助金）は、業務効率化ツールやAIシステムの導入費用を補助します。\n補助率は最大1/2、上限150万円。GビズIDの取得が必須です。';
+  if(lq.includes('申請')||lq.includes('スケジュール')||lq.includes('いつ'))return '申請の流れは一般的に：\n① GビズID取得（約2週間）\n② 事業計画書の作成（2〜4週間）\n③ 公募期間中に申請（約1ヶ月）\n④ 採択通知（1〜2ヶ月後）\n\n早めの準備が採択率を高めます。';
+  if(lq.includes('書類')||lq.includes('必要'))return '一般的に必要な書類：\n・確定申告書（直近2期分）\n・履歴事項全部証明書\n・GビズIDプライムアカウント\n・事業計画書（補助金ごとに様式が異なります）';
+  return '補助金の詳細については、公募要領を必ずご確認の上、認定支援機関や商工会議所へのご相談もお勧めします。他にご質問はありますか？';
+}
+
+function showResults(){
+  const grants=[
+    {title:'ものづくり・商業・サービス生産性向上促進補助金',badge:'経産省',badgeClass:'badge-meti',score:82,scoreClass:'high',fillClass:'fill-high',max:'最大1,250万円',rate:'1/2〜2/3補助',deadline:'次回: 2025年6月',
+      reqs:[{ok:'ok',text:'中小企業・小規模事業者に該当'},{ok:'ok',text:'付加価値額向上の事業計画がある'},{ok:'warn',text:'事業計画書（認定支援機関の確認印が必要）'},{ok:'no',text:'GビズIDプライムアカウントの取得'}],
+      schedule:[{mo:'今すぐ',text:'GビズIDプライムの申請'},{mo:'〜1ヶ月',text:'認定支援機関への相談・事業計画書作成'},{mo:'〜2ヶ月',text:'電子申請システムで申請'},{mo:'〜4ヶ月',text:'採択通知・交付申請'}]},
+    {title:'デジタル化・AI導入補助金（旧IT導入補助金）',badge:'経産省',badgeClass:'badge-meti',score:91,scoreClass:'high',fillClass:'fill-high',max:'最大150万円',rate:'1/2補助',deadline:'随時受付中',
+      reqs:[{ok:'ok',text:'中小企業・小規模事業者に該当'},{ok:'ok',text:'業務効率化・DX推進が目的'},{ok:'warn',text:'IT導入支援事業者を通じた申請が必要'},{ok:'no',text:'GビズIDプライムアカウントの取得'}],
+      schedule:[{mo:'今すぐ',text:'GビズID取得・IT支援事業者の選定'},{mo:'〜3週間',text:'導入ツール・見積もりの確定'},{mo:'〜1ヶ月',text:'申請書類の作成・提出'},{mo:'〜2ヶ月',text:'採択・ツール導入開始'}]},
+    {title:'人材開発支援助成金（人への投資促進コース）',badge:'厚労省',badgeClass:'badge-mhlw',score:67,scoreClass:'mid',fillClass:'fill-mid',max:'最大75万円',rate:'訓練費の最大75%',deadline:'随時受付中',
+      reqs:[{ok:'ok',text:'雇用保険適用事業所である'},{ok:'ok',text:'従業員へのOFF-JT研修を実施'},{ok:'warn',text:'訓練計画届の事前提出（実施1ヶ月前まで）'},{ok:'ok',text:'賃金台帳・出勤簿の整備'}],
+      schedule:[{mo:'今すぐ',text:'訓練内容・研修機関の選定'},{mo:'〜1ヶ月前',text:'訓練計画届を労働局へ提出'},{mo:'実施中',text:'研修の実施・記録保管'},{mo:'終了後',text:'支給申請書の提出（2ヶ月以内）'}]}
+  ];
+
+  document.getElementById('resultSub').textContent=`${answers.industry||''}・${answers.employees||''}の企業に適合する制度: ${grants.length}件`;
+  const rc=document.getElementById('resultContent');
+  rc.innerHTML=`<div class="summary-bar">
+    <div class="sum-card"><div class="sum-num">${grants.length}</div><div class="sum-label">適合件数</div></div>
+    <div class="sum-card"><div class="sum-num" style="color:#3B6D11">91%</div><div class="sum-label">最高適合度</div></div>
+    <div class="sum-card"><div class="sum-num" style="font-size:16px">2,575万</div><div class="sum-label">最大受給可能額</div></div>
+  </div>`;
+
+  grants.forEach(g=>{
+    const card=document.createElement('div');
+    card.className='grant-card';
+    card.innerHTML=`
+      <div class="gc-top">
+        <span class="gc-badge ${g.badgeClass}">${g.badge}</span>
+        <span class="gc-title">${g.title}</span>
+        <span class="gc-score ${g.scoreClass}">${g.score}%</span>
+      </div>
+      <div class="meter-bg"><div class="meter-fill ${g.fillClass}" style="width:0%" data-w="${g.score}"></div></div>
+      <div class="gc-meta">
+        <span class="meta-chip">${g.max}</span>
+        <span class="meta-chip">${g.rate}</span>
+        <span class="meta-chip">${g.deadline}</span>
+      </div>
+      <div class="req-section">
+        <div class="req-label">適合要件チェック</div>
+        ${g.reqs.map(r=>`<div class="req-row"><div class="req-dot ${r.ok==='ok'?'dot-ok':r.ok==='warn'?'dot-warn':'dot-no'}"></div><span>${r.text}</span></div>`).join('')}
+      </div>
+      <div class="sched-section">
+        <div class="sched-label">申請スケジュール</div>
+        ${g.schedule.map((s,i)=>`<div class="sched-row">
+          <div class="sched-mo">${s.mo}</div>
+          <div class="sched-bar"><div class="sched-circle"></div>${i<g.schedule.length-1?'<div class="sched-line-v"></div>':''}</div>
+          <div class="sched-text">${s.text}</div>
+        </div>`).join('')}
+      </div>`;
+    rc.appendChild(card);
+  });
+
+  // animate meter bars
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('.meter-fill[data-w]').forEach(el=>{
+      setTimeout(()=>{el.style.width=el.dataset.w+'%';},100);
+    });
+  });
+}
+
+setTimeout(()=>addMsg('navi',FLOW[0].text,FLOW[0].choices),300);
+</script>
+</body>
+</html>
