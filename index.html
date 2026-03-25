@@ -38,7 +38,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .logo-text{font-size:15px;font-weight:600;}
 .logo-text span{color:var(--blue);}
 .header-badge{margin-left:auto;background:var(--blue-light);color:var(--blue-text);font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500;}
-.body{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 52px);}
+.body{display:grid;grid-template-columns:1fr 3fr;height:calc(100vh - 52px);}
 
 /* ── chat pane ── */
 .chat-pane{background:var(--bg2);border-right:0.5px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
@@ -169,6 +169,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 /* ── placeholder ── */
 .placeholder-msg{text-align:center;padding:60px 20px;color:var(--text3);font-size:13px;line-height:1.8;}
 
+/* ── horizontal comparison layout ── */
+.compare-wrap{display:flex;flex-direction:column;gap:0;}
+.compare-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.compare-header-row{display:grid;grid-template-columns:120px repeat(3,1fr);gap:0;margin-bottom:0;position:sticky;top:0;z-index:2;background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg) var(--radius-lg) 0 0;overflow:hidden;}
+.compare-row{display:grid;grid-template-columns:120px repeat(3,1fr);gap:0;border-left:0.5px solid var(--border);border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);}
+.compare-row:last-child{border-radius:0 0 var(--radius-lg) var(--radius-lg);}
+.compare-row-label{padding:10px 10px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;background:var(--bg3);border-right:0.5px solid var(--border);display:flex;align-items:flex-start;line-height:1.4;}
+.compare-cell{padding:10px 12px;border-right:0.5px solid var(--border);font-size:12px;line-height:1.5;}
+.compare-cell:last-child{border-right:none;}
+.compare-cell.alt{background:var(--bg3);}
+.col-head{padding:10px 12px;font-size:12px;font-weight:600;border-right:0.5px solid var(--border);background:var(--bg2);}
+.col-head:last-child{border-right:none;}
+.col-head-label{padding:10px 10px;font-size:11px;font-weight:600;color:var(--text2);background:var(--bg3);border-right:0.5px solid var(--border);}
+.score-big{font-size:22px;font-weight:700;}
+.score-big.high{color:#3B6D11;}
+.score-big.mid{color:#BA7517;}
+
 /* ── loading ── */
 .loading-dots{display:inline-flex;gap:3px;vertical-align:middle;}
 .loading-dots span{width:5px;height:5px;border-radius:50%;background:var(--text3);animation:blink 1.2s infinite;display:inline-block;}
@@ -211,6 +228,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
         <div class="step-dot" id="sd2"></div>
         <div class="step-dot" id="sd3"></div>
         <div class="step-dot" id="sd4"></div>
+        <div class="step-dot" id="sd5"></div>
       </div>
     </div>
     <div class="chat-msgs" id="chatMsgs"></div>
@@ -268,7 +286,8 @@ const FLOW=[
   {text:'ありがとうございます。従業員数を教えてください。',choices:['1〜5名','6〜20名','21〜50名','51〜100名','101名以上'],key:'employees'},
   {text:'設立からの年数はどれくらいですか？',choices:['創業1年未満','1〜3年','3〜5年','5〜10年','10年以上'],key:'age'},
   {text:'最も力を入れたい取り組みを選んでください。',choices:['設備・機械の導入','DX・ITシステム導入','新商品・新サービス開発','採用・人材育成','販路拡大','事業承継・M&A'],key:'goal'},
-  {text:'直近の売上高（概算）を教えてください。',choices:['1,000万円未満','1,000〜5,000万円','5,000万円〜1億円','1億〜5億円','5億円以上'],key:'revenue'}
+  {text:'直近の売上高（概算）を教えてください。',choices:['1,000万円未満','1,000〜5,000万円','5,000万円〜1億円','1億〜5億円','5億円以上'],key:'revenue'},
+  {text:'補助金・助成金の支給をご希望の時期はいつ頃ですか？\nスケジュールの逆算にご活用します。',choices:['3ヶ月以内（急ぎ）','6ヶ月以内','1年以内','1〜2年以内','時期はまだ未定'],key:'deadline'}
 ];
 
 const GRANTS=[
@@ -351,8 +370,9 @@ function addMsg(from,html,choices){
 }
 
 function updateBar(s){
-  for(let i=0;i<5;i++){
+  for(let i=0;i<6;i++){
     const d=document.getElementById('sd'+i);
+    if(!d)continue;
     d.className='step-dot'+(i<s?' done':i===s?' active':'');
   }
 }
@@ -377,7 +397,7 @@ function showAnalyzing(){
   msgs.scrollTop=msgs.scrollHeight;
   setTimeout(()=>{
     document.getElementById('analyzing')&&document.getElementById('analyzing').remove();
-    addMsg('navi','分析が完了しました！\n\n適合する補助金・助成金が <strong>3件</strong>、それぞれに対応できる社労士が <strong>4名</strong> 見つかりました。\n右側のパネルで確認できます。補助金カードの下に推奨社労士も表示されています。\n\nご質問があればお気軽にどうぞ。');
+    addMsg('navi','分析が完了しました！\n\n適合する補助金・助成金が <strong>3件</strong>、それぞれに対応できる社労士が <strong>4名</strong> 見つかりました。\n支給希望時期「'+( answers.deadline||'未定')+'」をもとにスケジュールを逆算しています。\n右側のパネルで確認できます。\n\nご質問があればお気軽にどうぞ。');
     input.disabled=false; sendBtn.disabled=false;
     input.placeholder='例：ものづくり補助金の条件は？';
     analysisComplete=true;
@@ -410,52 +430,142 @@ function getReply(q){
   return '詳細は各補助金の公募要領をご確認の上、右の社労士タブから専門家にご相談ください。他にご質問はありますか？';
 }
 
+/* ─────── SCHEDULE GENERATOR ─────── */
+function buildSchedule(grantId, deadlineAnswer){
+  const urgent = deadlineAnswer==='3ヶ月以内（急ぎ）';
+  const mid    = deadlineAnswer==='6ヶ月以内';
+  const undef  = deadlineAnswer==='時期はまだ未定';
+
+  const now = new Date();
+  function addMonths(m){
+    const d=new Date(now);
+    d.setMonth(d.getMonth()+m);
+    return d.getFullYear()+'年'+(d.getMonth()+1)+'月';
+  }
+
+  // 警告バナーを出す条件
+  let warning = null;
+  if(urgent && (grantId==='monodukuri')){
+    warning='⚠️ 3ヶ月以内の支給は難しい場合があります。ものづくり補助金は採択〜入金まで最短5〜6ヶ月かかります。';
+  }
+  if(urgent && grantId==='it'){
+    warning='⚠️ IT導入補助金は最短3ヶ月での採択が可能ですが、入金は採択後2〜3ヶ月後になります。早急な準備が必要です。';
+  }
+
+  const schedules = {
+    monodukuri: [
+      {mo: addMonths(0)+' 今すぐ', text:'GビズIDプライムの申請（約2週間）'},
+      {mo: addMonths(1),           text:'認定支援機関への相談・事業計画書の作成開始'},
+      {mo: addMonths(2),           text:'事業計画書完成・電子申請システムで提出'},
+      {mo: addMonths(4),           text:'採択通知・交付申請の手続き'},
+      {mo: addMonths(urgent?5:6),  text:'事業実施・証拠書類の整備'},
+      {mo: addMonths(urgent?6:8),  text:'実績報告・補助金の入金 🎯 '+(deadlineAnswer||'')},
+    ],
+    it: [
+      {mo: addMonths(0)+' 今すぐ', text:'GビズID取得・IT導入支援事業者の選定'},
+      {mo: addMonths(urgent?0:1),  text:'導入ツールの選定・見積もり確定'},
+      {mo: addMonths(1),           text:'申請書類の作成・電子申請'},
+      {mo: addMonths(urgent?2:3),  text:'採択通知・ツール導入開始'},
+      {mo: addMonths(urgent?3:4),  text:'事業完了・実績報告'},
+      {mo: addMonths(urgent?3:5),  text:'補助金の入金 🎯 '+(deadlineAnswer||'')},
+    ],
+    jinzai: [
+      {mo: addMonths(0)+' 今すぐ', text:'訓練内容・研修機関の選定'},
+      {mo: addMonths(1),           text:'訓練計画届を管轄の労働局へ提出（実施1ヶ月前まで必須）'},
+      {mo: addMonths(urgent?1:2),  text:'研修の実施・出勤簿・賃金台帳の整備'},
+      {mo: addMonths(urgent?2:3),  text:'研修終了・支給申請書の提出（終了後2ヶ月以内）'},
+      {mo: addMonths(urgent?3:4),  text:'審査完了・助成金の入金 🎯 '+(deadlineAnswer||'')},
+    ]
+  };
+
+  return { rows: schedules[grantId] || schedules.monodukuri, warning };
+}
+
 /* ─────── RENDER GRANTS ─────── */
 function renderGrants(){
-  resultContent.innerHTML='<div class="summary-bar"><div class="sum-card"><div class="sum-num">3</div><div class="sum-label">適合件数</div></div><div class="sum-card"><div class="sum-num" style="color:#3B6D11">91%</div><div class="sum-label">最高適合度</div></div><div class="sum-card"><div class="sum-num" style="font-size:16px">2,575万</div><div class="sum-label">最大受給可能額</div></div></div>';
-  GRANTS.forEach(g=>{
-    const srs=g.srIds.map(id=>SR_DATA.find(s=>s.id===id)).filter(Boolean);
-    const card=document.createElement('div');
-    card.className='grant-card';
-    card.innerHTML=`
-      <div class="gc-top">
-        <span class="gc-badge ${g.badgeClass}">${g.badge}</span>
-        <span class="gc-title">${g.title}</span>
-        <span class="gc-score ${g.scoreClass}">${g.score}%</span>
-      </div>
-      <div class="meter-bg"><div class="meter-fill ${g.fillClass}" style="width:0%" data-w="${g.score}"></div></div>
-      <div class="gc-meta">
-        <span class="meta-chip">${g.max}</span>
-        <span class="meta-chip">${g.rate}</span>
-        <span class="meta-chip">${g.deadline}</span>
-      </div>
-      <div class="req-section">
-        <div class="req-label">適合要件チェック</div>
-        ${g.reqs.map(r=>`<div class="req-row"><div class="req-dot ${r.ok==='ok'?'dot-ok':r.ok==='warn'?'dot-warn':'dot-no'}"></div><span>${r.text}</span></div>`).join('')}
-      </div>
-      <div class="sched-section" style="margin-bottom:12px;">
-        <div class="sched-label">申請スケジュール</div>
-        ${g.schedule.map((s,i)=>`<div class="sched-row">
-          <div class="sched-mo">${s.mo}</div>
-          <div class="sched-bar"><div class="sched-circle"></div>${i<g.schedule.length-1?'<div class="sched-line-v"></div>':''}</div>
-          <div class="sched-text">${s.text}</div>
+  const dl = answers.deadline||'未定';
+
+  // summary bar
+  let html = `<div class="compare-summary">
+    <div class="sum-card"><div class="sum-num">3</div><div class="sum-label">適合件数</div></div>
+    <div class="sum-card"><div class="sum-num" style="color:#3B6D11">91%</div><div class="sum-label">最高適合度</div></div>
+    <div class="sum-card"><div class="sum-num" style="font-size:16px">2,575万</div><div class="sum-label">最大受給可能額</div></div>
+  </div>`;
+
+  // ── header row ──
+  html += `<div class="compare-wrap">
+  <div class="compare-header-row">
+    <div class="col-head-label"></div>
+    ${GRANTS.map(g=>`<div class="col-head">
+      <span class="gc-badge ${g.badgeClass}" style="margin-bottom:4px;display:inline-block;">${g.badge}</span><br>
+      <span style="font-size:12px;line-height:1.4;">${g.title}</span>
+    </div>`).join('')}
+  </div>`;
+
+  // ── 適合度 row ──
+  html += `<div class="compare-row">
+    <div class="compare-row-label">適合度</div>
+    ${GRANTS.map((g,i)=>`<div class="compare-cell${i%2===1?' alt':''}">
+      <div class="score-big ${g.scoreClass}">${g.score}%</div>
+      <div class="meter-bg" style="margin-top:6px;"><div class="meter-fill ${g.fillClass}" style="width:0%" data-w="${g.score}"></div></div>
+    </div>`).join('')}
+  </div>`;
+
+  // ── 補助金額・補助率 row ──
+  html += `<div class="compare-row">
+    <div class="compare-row-label">補助内容</div>
+    ${GRANTS.map((g,i)=>`<div class="compare-cell${i%2===1?' alt':''}">
+      <div style="font-weight:600;font-size:13px;margin-bottom:3px;">${g.max}</div>
+      <div style="font-size:11px;color:var(--text2);">${g.rate}</div>
+      <div style="font-size:11px;margin-top:4px;padding:2px 6px;background:var(--bg3);border-radius:4px;display:inline-block;border:0.5px solid var(--border);">${g.deadline}</div>
+    </div>`).join('')}
+  </div>`;
+
+  // ── 適合要件 row ──
+  html += `<div class="compare-row">
+    <div class="compare-row-label">要件チェック</div>
+    ${GRANTS.map((g,i)=>`<div class="compare-cell${i%2===1?' alt':''}">
+      ${g.reqs.map(r=>`<div class="req-row"><div class="req-dot ${r.ok==='ok'?'dot-ok':r.ok==='warn'?'dot-warn':'dot-no'}"></div><span>${r.text}</span></div>`).join('')}
+    </div>`).join('')}
+  </div>`;
+
+  // ── スケジュール row ──
+  html += `<div class="compare-row">
+    <div class="compare-row-label">申請スケジュール<br><span style="font-weight:400;opacity:.7;font-size:10px;">希望: ${dl}</span></div>
+    ${GRANTS.map((g,i)=>{
+      const {rows,warning}=buildSchedule(g.id, answers.deadline||'');
+      const warnHtml=warning?`<div style="font-size:10px;padding:5px 8px;background:var(--amber-light);color:var(--amber-text);border-radius:5px;margin-bottom:6px;line-height:1.4;">${warning}</div>`:'';
+      const rowsHtml=rows.map(s=>`<div style="display:flex;gap:6px;margin-bottom:5px;font-size:11px;align-items:flex-start;">
+        <div style="width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0;margin-top:3px;"></div>
+        <div><span style="color:var(--text2);">${s.mo}</span><br>${s.text}</div>
+      </div>`).join('');
+      return `<div class="compare-cell${i%2===1?' alt':''}">${warnHtml}${rowsHtml}</div>`;
+    }).join('')}
+  </div>`;
+
+  // ── 対応社労士 row ──
+  html += `<div class="compare-row">
+    <div class="compare-row-label">対応社労士</div>
+    ${GRANTS.map((g,i)=>{
+      const srs=g.srIds.map(id=>SR_DATA.find(s=>s.id===id)).filter(Boolean);
+      return `<div class="compare-cell${i%2===1?' alt':''}">
+        ${srs.map(s=>`<div class="sr-mini-card" style="margin-bottom:6px;" onclick="openContact('${s.id}')">
+          <div class="sr-avatar">${s.initials}</div>
+          <div class="sr-mini-info">
+            <div class="sr-mini-name">${s.name}</div>
+            <div class="sr-mini-sub">${s.area}</div>
+          </div>
+          <div class="sr-mini-match">${s.matchScore}%</div>
         </div>`).join('')}
-      </div>
-      <div class="sr-banner">
-        <span class="sr-banner-label">この補助金の対応社労士</span>
-        ${srs.map(s=>`
-          <div class="sr-mini-card" onclick="openContact('${s.id}')">
-            <div class="sr-avatar">${s.initials}</div>
-            <div class="sr-mini-info">
-              <div class="sr-mini-name">${s.name}</div>
-              <div class="sr-mini-sub">${s.office} / ${s.area}</div>
-            </div>
-            <div class="sr-mini-match">${s.matchScore}%</div>
-          </div>`).join('')}
-        <button class="sr-more-btn" onclick="switchTab('sr')">社労士をもっと探す →</button>
+        <button class="sr-more-btn" onclick="switchTab('sr')">もっと探す →</button>
       </div>`;
-    resultContent.appendChild(card);
-  });
+    }).join('')}
+  </div>`;
+
+  html += `</div>`; // /compare-wrap
+
+  resultContent.innerHTML = html;
+
   requestAnimationFrame(()=>{
     document.querySelectorAll('.meter-fill[data-w]').forEach(el=>{
       setTimeout(()=>{el.style.width=el.dataset.w+'%';},80);
